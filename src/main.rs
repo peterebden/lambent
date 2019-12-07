@@ -2,7 +2,6 @@ use std::path::PathBuf;
 #[macro_use]
 extern crate log;
 extern crate stderrlog;
-#[macro_use]
 extern crate structopt;
 use structopt::StructOpt;
 
@@ -11,15 +10,30 @@ use structopt::StructOpt;
 struct Opts {
     #[structopt(short = "v", long = "verbose", parse(from_occurrences))]
     verbose: usize,
+    #[structopt(subcommand)]
+    cmd: Command
 }
 
+#[derive(Debug, StructOpt)]
+enum Command {
+    Battery {
+        #[structopt(short = "b", long = "battery_file", default_value = "/sys/class/power_supply/BAT0/capacity", parse(from_os_str))]
+        battery_file: PathBuf
+    },
+}
 
 fn main() {
-    let opt = Opt::from_args();
+    let opts = Opts::from_args();
     stderrlog::new()
         .module(module_path!())
-        .verbosity(opt.verbose)
+        .verbosity(opts.verbose)
         .init()
         .unwrap();
-    info!("Hello, world");
+    match opts.cmd {
+        Command::Battery{ battery_file } => battery(battery_file)
+    }
+}
+
+fn battery(filename: PathBuf) {
+    error!("battery {}", filename.as_path().display());
 }
