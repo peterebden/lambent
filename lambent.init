@@ -1,0 +1,6 @@
+#!/sbin/openrc-run
+
+command="/usr/local/bin/lambent"
+command_args="-v battery"
+command_background=true
+pidfile="/run/${RC_SVCNAME}.pid"
