@@ -1,9 +1,8 @@
 use std::path::PathBuf;
-#[macro_use]
-extern crate log;
 extern crate stderrlog;
 extern crate structopt;
 use structopt::StructOpt;
+use lambent;
 
 #[derive(Debug, StructOpt)]
 #[structopt(name = "lambent", about = "A utility for managing RGB keyboard backlights.")]
@@ -30,10 +29,6 @@ fn main() {
         .init()
         .unwrap();
     match opts.cmd {
-        Command::Battery{ battery_file } => battery(battery_file)
+        Command::Battery{ battery_file } => lambent::battery(battery_file.as_path())
     }
-}
-
-fn battery(filename: PathBuf) {
-    error!("battery {}", filename.as_path().display());
 }
