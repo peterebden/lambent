@@ -19,7 +19,9 @@ enum Command {
     Battery {
         #[structopt(short = "b", long = "battery_file", default_value = "/sys/class/power_supply/BAT0/capacity", parse(from_os_str))]
         battery_file: PathBuf,
-        #[structopt(short = "s", long = "sleep_duration", default_value = "30s")]
+        #[structopt(short = "k", long = "kbd_file", default_value = "/sys/bus/hid/drivers/razerkbd/0003:1532:0239.0004/matrix_effect_static", parse(from_os_str))]
+        kbd_file: PathBuf,
+        #[structopt(short = "d", long = "sleep_duration", default_value = "30s")]
         sleep_duration: Duration,
     },
 }
@@ -32,6 +34,6 @@ fn main() {
         .init()
         .unwrap();
     match opts.cmd {
-        Command::Battery{ battery_file, sleep_duration } => lambent::battery(battery_file.as_path(), *sleep_duration)
+        Command::Battery{ battery_file, kbd_file, sleep_duration } => lambent::battery(battery_file.as_path(), kbd_file.as_path(), *sleep_duration)
     }
 }
