@@ -18,20 +18,31 @@ pub fn battery(battery_file: &Path, kbd_file: &Path, sleep_duration: Duration) {
         let capacity = contents.trim().parse::<i32>().unwrap();
         info!("Current capacity: {}", capacity);
         if capacity != current_capacity {
-            update_brightness(kbd_file, capacity);
+            update_keyboard(kbd_file, capacity);
             current_capacity = capacity;
         }
         thread::sleep(sleep_duration);
     }
 }
 
-fn update_brightness(kbd_file: &Path, capacity: i32) {
+fn update_keyboard(kbd_file: &Path, capacity: i32) {
     let green = HSL::from_rgb(&[0, 255, 0]);
     let red = HSL::from_rgb(&[255, 0, 0]);
-    let proportion = capacity as f64 / 100.0;
-    let h = proportion * (green.h - red.h) + red.h;  // This assumes green.h > red.h, which is indeed the case.
-    info!("New colour for capacity {}: {}", capacity, h);
-    let (r, g, b) = HSL{h: h, s: red.s, l: red.l}.to_rgb();
+    let blue = HSL::from_rgb(&[0, 0, 255]);
+    if capacity < 10 {
+        update_keyboard_colour(kbd_file, &blue);
+    } else if capacity < 20 {
+        update_keyboard_colour(kbd_file, &red);
+    } else {
+        let proportion = (capacity - 20) as f64 / 80.0;
+        let h = proportion * (green.h - red.h) + red.h;
+        update_keyboard_colour(kbd_file, &HSL{h: h, s: red.s, l: red.l});
+    }
+}
+
+fn update_keyboard_colour(kbd_file: &Path, colour: &HSL) {
+    let (r, g, b) = colour.to_rgb();
+    info!("new rgb: {},{},{}", r, g, b);
     match fs::write(kbd_file, [r, g, b]) {
         Ok(()) => {},
         Err(error) => error!("Failed to update keyboard backlight: {}", error),
