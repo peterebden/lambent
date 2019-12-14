@@ -1,12 +1,15 @@
 use std::path::Path;
 use std::fs;
-use std::thread;
 use std::time::Duration;
+use std::time::Instant;
 use hsl::HSL;
+use signal::trap::Trap;
+use signal::Signal;
 #[macro_use]
 extern crate log;
 
 pub fn battery(battery_file: &Path, kbd_file: &Path, sleep_duration: Duration) {
+    let trap = Trap::trap(&[Signal::SIGHUP]);
     let mut current_capacity = -5;
     loop {
         let contents = match fs::read_to_string(battery_file) {
@@ -21,7 +24,7 @@ pub fn battery(battery_file: &Path, kbd_file: &Path, sleep_duration: Duration) {
             update_keyboard(kbd_file, capacity);
             current_capacity = capacity;
         }
-        thread::sleep(sleep_duration);
+        trap.wait(Instant::now().checked_add(sleep_duration).unwrap());
     }
 }
 
