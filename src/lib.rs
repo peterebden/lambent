@@ -1,7 +1,7 @@
 use std::path::Path;
 use std::fs;
+use std::thread;
 use std::time::Duration;
-use std::time::Instant;
 use hsl::HSL;
 use signal::trap::Trap;
 use signal::Signal;
@@ -9,23 +9,37 @@ use signal::Signal;
 extern crate log;
 
 pub fn battery(battery_file: &Path, kbd_file: &Path, sleep_duration: Duration) {
-    let trap = Trap::trap(&[Signal::SIGHUP]);
+    let bfile = battery_file.to_path_buf();
+    let kfile = kbd_file.to_path_buf();
+
+    thread::spawn(move || {
+        let trap = Trap::trap(&[Signal::SIGHUP]);
+        for signal in trap {
+            info!("Received signal {}", signal);
+            update_keyboard(kfile.as_path(), read_capacity(bfile.as_path()));
+        }
+    });
+
     let mut current_capacity = -5;
     loop {
-        let contents = match fs::read_to_string(battery_file) {
-            Ok(contents) => contents,
-            Err(error) => {
-                panic!("Error reading file: {}", error);
-            }
-        };
-        let capacity = contents.trim().parse::<i32>().unwrap();
+        let capacity = read_capacity(battery_file);
         info!("Current capacity: {}", capacity);
         if capacity != current_capacity {
             update_keyboard(kbd_file, capacity);
             current_capacity = capacity;
         }
-        trap.wait(Instant::now().checked_add(sleep_duration).unwrap());
+        thread::sleep(sleep_duration);
     }
+}
+
+fn read_capacity(battery_file: &Path) -> i32 {
+    let contents = match fs::read_to_string(battery_file) {
+        Ok(contents) => contents,
+        Err(error) => {
+            panic!("Error reading file: {}", error);
+        }
+    };
+    return contents.trim().parse::<i32>().unwrap();
 }
 
 fn update_keyboard(kbd_file: &Path, capacity: i32) {
